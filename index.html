@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TypeScript + Webpack 4</title>
+</head>
+<body>
+
+<script src="dist/main.js"></script>
+<script src="socket.io.js"></script>
+<script>
+var socket = io("ws://localhost:5000/");
+       // 第一个enter代表是进入事件，第二个enter为了显示需要
+       socket.on('enter',function(data){
+           console.log("in",data)
+            //location.reload()
+       })
+
+       socket.on('message',function(data){
+            location.reload()
+       })
+</script>
+
+</body>
+</html>
