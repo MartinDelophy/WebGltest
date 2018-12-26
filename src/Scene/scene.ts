@@ -8,17 +8,21 @@ interface CanvasConfig {
     height: number;
 }
 class Canvas {
+    canvas: any
     constructor (config: CanvasConfig = DataConfig) {
-        let canvas = document.createElement("canvas");
-        canvas.setAttribute("width", config.width + "");
-        canvas.setAttribute("height", config.height + "");
-        document.querySelector("body").appendChild(canvas);
-        return canvas
-
+        this.canvas = document.createElement("canvas");
+        this.canvas.setAttribute("width", config.width + "");
+        this.canvas.setAttribute("height", config.height + "");
+        document.querySelector("#main-container").appendChild(this.canvas);
     }
+    getCanvas(){
+        return this.canvas;
+    }
+
+   
 }
 
-let Scene =  new Canvas;
+let Scene =  Canvas;
 
 
 

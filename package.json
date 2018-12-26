@@ -17,8 +17,8 @@
   },
   "scripts": {
     "build": "webpack",
-    "start": "node webServer",
-    
+    "start": "webpack && node webServer",
+    "watch": "webpack --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

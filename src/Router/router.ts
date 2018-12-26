@@ -7,15 +7,12 @@ interface RouterConfig {
 let Router = function (rc: RouterConfig[]) {
     this.routes = rc;
     let that = this;
-    let div = document.createElement("div");
-    div.id = "main-container";
-    document.querySelector("body").append(div);
     function clear(){
-    div.innerHTML = ""
+        document.querySelector("#main-container").innerHTML = ""
     }
 
     for (var one of that.routes) {
-        console.log("in",one)
+        
         if (one.main == true) {
             
             clear();

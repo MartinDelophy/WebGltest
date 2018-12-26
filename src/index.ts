@@ -1,16 +1,15 @@
-// import {Scene} from './Scene/scene';
-// import {vec3, vec4, quat, mat4} from 'gl-matrix';
+
+
  import Router from './Router/router';
+import Demo_1 from './demo_1/demo';
+
 
 
 
 let config = [
 {
 name: "index",
-method: function(){
-    document.querySelector("#main-container").innerHTML = "123";
-
-},
+method: Demo_1,
 main:true
 },{
     name:"go",
