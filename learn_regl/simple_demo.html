@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+    <meta charset=utf-8>
+  </head>
+  <body>
+  </body>
+  <script language="javascript" src="https://npmcdn.com/regl/dist/regl.js"></script> 
+  <script language="javascript">
+    var regl = createREGL()
+ 
+    const draw = regl({
+  frag: `
+  precision mediump float;
+ 
+ void main(void)
+ {
+     gl_FragColor = vec4(0.3, 0.3, 0.0, 1.0);;
+ }`,
+
+  vert: `
+  precision mediump float;
+  attribute vec3 position;
+    uniform   mat4 mvpMatrix;
+ 
+    void main(void){
+	    gl_Position = mvpMatrix * vec4(position, 1.0);
+    }
+`,
+
+  attributes: {
+    position: [
+      1, 0,0,
+      0, 1,0,
+      0, 0.5,0],
+  },
+  
+
+  uniforms: {
+
+    mvpMatrix:[1,0,0,1,0.1,0.1,1,1,1,0.1,0.1,1,1,1,1,1]
+
+  },
+
+  depth: {
+    enable: false
+  },
+
+  count: 3
+})
+
+regl.frame(({tick}) => {
+  regl.clear({
+    color: [0, 0, 0, 1]
+  })
+
+  draw({
+
+    
+
+  })
+})
+  </script> 
+</html>
