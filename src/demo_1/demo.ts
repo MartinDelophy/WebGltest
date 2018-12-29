@@ -11,7 +11,9 @@ let verte_Xshader = `
 attribute vec2 a_position;
  
 uniform vec2 u_resolution;
+attribute vec4 a_color;
 uniform vec2 u_translation;
+varying vec4 v_color;
 void main() {
     // 从像素坐标转换到 0.0 到 1.0
     vec2 zeroToOne = a_position / u_resolution + u_translation;
@@ -23,13 +25,15 @@ void main() {
     vec2 clipSpace = zeroToTwo - 1.0;
  
     gl_Position = vec4(clipSpace * vec2(1, -1) , 0, 1);
+    v_color = a_color;
   }
 `;
 
 let fragment_Shader = `
 precision mediump float;
+varying vec4 v_color;
 void main() {
-  gl_FragColor = vec4(1, 0, 0.5, 1);
+  gl_FragColor = v_color;
 }
 `;
 
@@ -41,6 +45,8 @@ void main() {
   var resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
   var translationLocation = gl.getUniformLocation(
     program, "u_translation");
+
+var colorLocation = gl.getAttribLocation(program, "a_color");
 
   var positionBuffer = gl.createBuffer();
 
@@ -144,6 +150,48 @@ void main() {
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+  gl.enableVertexAttribArray(colorLocation);
+
+    // Create a buffer to put colors in
+    var colorBuffer = gl.createBuffer();
+    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = colorBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    // Put geometry data into buffer
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Uint8Array([
+          // left column front
+        200,  70, 120,
+        200,  70, 120,
+        200,  70, 120,
+        200,  70, 120,
+        200,  70, 120,
+        200,  70, 120,
+
+
+          // left column back
+        80, 70, 200,
+        80, 70, 200,
+        80, 70, 200,
+        80, 70, 200,
+        80, 70, 200,
+        80, 70, 200,
+
+
+      
+
+          // top rung right
+        200, 200, 70,
+        200, 200, 70,
+        200, 200, 70,
+        200, 200, 70,
+        200, 200, 70,
+        200, 200, 70,
+]),
+      gl.STATIC_DRAW);
+
+
+
   // 清空画布
 gl.clearColor(0, 0, 0, 0);
 gl.clear(gl.COLOR_BUFFER_BIT);
@@ -170,6 +218,15 @@ gl.vertexAttribPointer(
 
      // 设置平移
      gl.uniform2fv(translationLocation, translation);
+
+        // Tell the attribute how to get data out of colorBuffer (ARRAY_BUFFER)
+    var size = 3;                 // 3 components per iteration
+    var type = gl.UNSIGNED_BYTE;  // the data is 8bit unsigned values
+    var normalize = true;         // normalize the data (convert from 0-255 to 0-1)
+    var stride = 0;               // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;               // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        colorLocation, size, type, normalize, stride, offset);
 
      // draw
   var primitiveType = gl.TRIANGLES;
