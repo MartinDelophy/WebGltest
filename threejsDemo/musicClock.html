@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js'></script>
+<script>
+class ClockTexture {
+  constructor (width = 512, height = 256) {
+    this.canvas = document.createElement('canvas')
+    this.ctx = this.canvas.getContext('2d')
+    this.width = this.canvas.width = width
+    this.height = this.canvas.height = height
+
+    this.canvas.style.position = 'fixed'
+    this.canvas.style.bottom = '1rem'
+    this.canvas.style.right = '1rem'
+    // document.body.appendChild(this.canvas)
+  }
+  getTime () {
+    let date = new Date()
+
+    let hours = date.getHours()
+    let minutes = date.getMinutes()
+    let seconds = date.getSeconds()
+
+    if (hours.toString().length === 1) hours = `0${hours}`
+    if (minutes.toString().length === 1) minutes = `0${minutes}`
+    if (seconds.toString().length === 1) seconds = `0${seconds}`
+
+    return {
+      firstDigitHours:    Math.floor((hours / 10) % 10),
+      secondDigitHours:   Math.floor((hours / 1) % 10),
+      firstDigitMinutes:  Math.floor((minutes / 10) % 10),
+      secondDigitMinute:  Math.floor((minutes / 1) % 10),
+      firstDigitSeconds:  Math.floor((seconds / 10) % 10),
+      secondDigitSeconds: Math.floor((seconds / 1) % 10),
+    }
+
+  }
+  renderDigit (digit) {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    this.ctx.fillStyle = '#fff'
+    this.ctx.font = '80px Helvetica'
+    this.ctx.fillText(digit, this.canvas.width / 2, this.canvas.height / 2)
+
+    let idata = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    let buffer = new Uint32Array(idata.data.buffer)
+    let grid = 3
+
+    let positions = []
+    for (let y = 0; y < this.canvas.height; y += grid) {
+      for (let x = 0; x < this.canvas.width; x += grid) {
+        if (buffer[y * this.canvas.width + x]) {
+          positions.push({ x: x / 10 - this.canvas.width / 20, y: y / 10-this.canvas.height / 20, z: 0 })
+        }
+      }
+    }
+    positions.length = Math.ceil(positions.length / 3 ) * 3
+    
+    let posArr = new Float32Array(positions.length)
+    let posScale = 2
+    for (let i = 0; i < positions.length; i += 3) {
+      posArr[i + 0] = positions[i].x * posScale
+      posArr[i + 1] = -positions[i].y * posScale
+      posArr[i + 2] = 0
+    }
+    
+
+    return posArr
+  }
+}
+
+let w = window.innerWidth
+let h = window.innerHeight
+
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000)
+const renderer = new THREE.WebGLRenderer()
+const clock = new THREE.Clock()
+const stats = new Stats()
+
+let elapsedTime = 0
+let angle = 0
+let spacing = 6
+let maxAngle = 90
+let cameraRadius = 150
+let radius = 50
+let clockParts = new THREE.Group()
+
+scene.add(clockParts)
+
+let texture = new ClockTexture()
+let timeDigitsArr = texture.getTime()
+
+let targetAngle = 0
+let lookAtTargetY = 0
+let lookAt = new THREE.Vector3()
+
+let uniforms = {
+  mixFactor: { value: 0 }
+}
+
+makeTimeGeometry(timeDigitsArr)
+setInterval(updateTime, 1000)
+
+renderer.setSize(w, h)
+renderer.setClearColor(0x232323)
+renderer.setPixelRatio(window.devicePixelRatio || 1)
+document.body.appendChild(renderer.domElement)
+
+camera.position.set(0, 20, 100)
+camera.lookAt(lookAt)
+
+stats.showPanel(0)
+stats.domElement.style.position = 'fixed'
+stats.domElement.style.top = stats.domElement.style.left = '1rem'
+document.body.appendChild( stats.domElement )
+
+let helper = new THREE.GridHelper(200, 20)
+// scene.add(helper)
+
+document.body.onresize = onresize
+renderFrame()
+
+function makeTimeGeometry (timeObj) {
+  uniforms = {
+    mixFactor: { value: 0 },
+    opacity: { value: 0 }
+  }
+  let digitsGroup = new THREE.Group()
+  let material = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: `
+      uniform float mixFactor;
+
+      attribute vec3 startPosition;
+
+      void main () {
+        vec3 newPosition = mix(startPosition, position, mixFactor);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+        gl_PointSize = 10.0;
+      }
+    `,
+    fragmentShader: `
+      uniform float opacity;
+
+      void main () {
+        // vec2 center = vec2(0.5);
+        // float dist = distance(center, gl_PointCoord);
+        // if (dist < 0.5) gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0 - dist);
+        gl_FragColor = vec4(0.8, 0.8, 0.8, opacity);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending	
+  })
+
+  for (let key in timeObj) {
+    let charPositions = texture.renderDigit(timeObj[key])
+    
+    let geometry = new THREE.BufferGeometry(charPositions.length)
+    
+    geometry.addAttribute('position', new THREE.BufferAttribute(charPositions, 3))
+
+    let startPositions = new Float32Array(charPositions.length)
+
+    let count = charPositions.length
+    let offset = 200
+    for (let i = 0; i < count; i += 3) {
+      let randX = (Math.random() * 2 - 1) * offset
+      let randY = (Math.random() * 2 - 1) * offset
+      let randZ = (Math.random() * 2 - 1) * offset
+      startPositions[i + 0] = randX
+      startPositions[i + 1] = randY
+      startPositions[i + 2] = randZ
+    }
+
+    geometry.addAttribute('startPosition', new THREE.BufferAttribute(startPositions, 3))
+
+    let mesh = new THREE.Line(geometry, material)
+    mesh.position.set(
+      Math.sin(angle) * radius,
+      angle * 20,
+      Math.cos(angle) * radius
+    )
+
+    if (key === 'firstDigitMinutes') targetAngle = angle
+
+    mesh.lookAt(new THREE.Vector3(0, angle * 20, 0))
+    mesh.rotation.y += 180 * Math.PI / 180
+
+    angle += (maxAngle * Math.PI / 180) / spacing
+    digitsGroup.add(mesh)
+  }
+  clockParts.add(digitsGroup)
+}
+
+function updateTime () {
+  let maxNumbersCount = 4
+  makeTimeGeometry(texture.getTime())
+  lookAtTargetY = targetAngle * 20
+  if (clockParts.children.length > maxNumbersCount) clockParts.remove(clockParts.children[0])
+}
+
+function renderFrame () {
+  
+  stats.begin()
+  
+  renderer.render(scene, camera)
+
+  let delta = clock.getDelta()
+  elapsedTime += delta
+  // clockParts.position.y -= delta * 30
+
+  camera.position.x += (Math.sin(targetAngle) * cameraRadius - camera.position.x) * (delta * 3)
+  camera.position.y += (targetAngle * 20 - camera.position.y) * (delta * 3)
+  camera.position.z += (Math.cos(targetAngle) * cameraRadius - camera.position.z) * (delta * 3)
+  lookAt.y += (lookAtTargetY - lookAt.y) * 0.1
+  camera.lookAt(lookAt)
+
+  uniforms.mixFactor.value += (1.0 - uniforms.mixFactor.value) * 0.2
+  uniforms.opacity.value += (1.0 - uniforms.mixFactor.value) * 0.12
+  
+  stats.end()
+  window.requestAnimationFrame(renderFrame)
+}
+
+function onresize () {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
+}
+</script>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+}
+</style>
+</body>
+</html>
