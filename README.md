@@ -1,6 +1,27 @@
-# WebGltest
-自己针对webpack 热加载的一点理解，route的实现，但主要还是要研究webGL
 
-##启动方式 
-npm install
-npm start
+
+# WebGltest
+
+ some demo about how I learn about webGL :santa: :christmas_tree:
+------------
+
+
+**src**
+> mainly about the self demo run with webpack 
+
+---
+
+**learn_regl**
+> find some examples about the use of regl
+
+---
+
+**mdn_webGL_camera**
+> find some demos in ![webglfundamentals](https://webglfundamentals.org/webgl/lessons/zh_cn/webgl-fundamentals.html)
+
+---
+**threejsDemo**
+
+> some demo of WebGl using three.js
+
+
